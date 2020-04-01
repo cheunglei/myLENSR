@@ -23,47 +23,6 @@ from torch.utils.data import DataLoader
 from utils import  MyDataset
 from models import GCN, MLP
 
-'''
-
-优点：
-速度快，内存少，与原文一致，能batch
-
-表述
-受影响比较大，所以风格比较相似
-
-记录改动用
-删除 申明中的fastmode
-###考虑取消dataloader的batch功能
-dataset 中的label 似乎不需要那么多乱七八糟的操作 直接就可以变成tensor 
-且第一个永远是0
-layers 中的output = torch.spmm(adj, support) 存疑 稀疏矩阵乘法
-GCN 第二层后面也加了一层dropout
-cls_reg 默认0.1改成10
-dataloader_workers 默认改为0
-
-
-3.18 
-争取实现 1. 有向图 
-2. batch训练 在utils的159行附近 将动态的label数量变成固定的 其他的呢？
-删去MyDataset中的 idx_train, idx_val, idx_test
-
-3.19
-andloss和orloss位置改动
-论文中提出的是HE是蕴涵而不是NOT
-实验证明 directed 无法训练
-triplet loss 写反了 !! 写反之后竟然达到train acc 83！！  这个不知道是论文写错了or没错。 应该是论文中写错了
-Semantic Regularization. 应该只针对fml F 对assignment不计算   这个应该没有疑问
-还是 args.cls位置的问题 现在看好像没有放错 本质上是个调参问题
-
-3.20 
-drawLoss.py 画图需要优化 完成
-quality_plot_discarded.py 导致 utils.loadData函数需要调整
-quality_plot_discarded.py atoms = 3  的solution 没有生成  完成
-
-3.21
-tools/下的文件路径大多有问题，最后调整吧
-draw_loss 的文件路径，最好创建个文件夹，类似与quality_plot
-'''
 
 def cuda_input(adj, features, labels):
     if args.cuda:
@@ -73,12 +32,7 @@ def cuda_input(adj, features, labels):
     return adj, features, labels
 
 
-# # to add regularization for AND OR gate
-# def andloss(children):
-#     temp = torch.mm(torch.t(children), children)
-#     loss = torch.sum(torch.abs(temp - torch.diag(temp)))
-#     # loss = torch.norm(temp - torch.diag(temp)) ** 2
-#     return loss
+
 
 def andloss(output,and_children):
     loss = 0
@@ -111,10 +65,6 @@ def orloss(output,or_children):
         # loss += torch.norm(torch.sum(or_child_tensor, dim=0).squeeze(0) - 1) ** 2
     return loss
 
-# def orloss(children):
-#     loss = (torch.norm(torch.sum(children, dim=0).squeeze(0)) - 1) ** 2
-#     # loss = torch.norm(torch.sum(children, dim=0).squeeze(0) - 1) ** 2
-#     return loss
 
 
 
