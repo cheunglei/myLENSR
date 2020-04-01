@@ -17,27 +17,16 @@ sys.path.append('../gcn/')
 from tqdm import tqdm
 from pysat import formula
 
-# from torch import Tensor
-# from os import listdir
-# from os.path import isfile, join
-# from random import shuffle
+
 from torch.utils.data import Dataset, DataLoader
 from mydataloader import *
-# from model.Misc.Conversion import Converter, RelevantFormulaContainer, POS_REL_NAMES_FULL, box_prop_name
-# from model.gcn.utils import load_data
-# from model.gcn.models import GCN, MLP
+
 from helper import augment_bbox
 
 preprocessed_dire = '../../dataset/VRD/'
 save_dire = './saved_model/'
 
-'''
 
-with open(f'{preprocessed_dire}/preprocessed_annotation_train.pk', 'rb') as f:
-    annotation_train = pk.load(f)
-with open(f'{preprocessed_dire}/preprocessed_annotation_test.pk', 'rb') as f:
-    annotation_test = pk.load(f)
-'''
 parser = argparse.ArgumentParser()
 # parser.add_argument('--ds_name', type=str)
 parser.add_argument('--seed', type=int, default=42, help='Random seed.')
@@ -105,32 +94,7 @@ with open(preprocessed_dire + 'info_test.pk', 'rb') as f:
             break
 
 
-'''
-preprocessed_annotation_train = pk.load(open(preprocessed_dire + 'preprocessed_annotation_train.pk', 'rb'))
-preprocessed_image_features_train = pk.load(open(preprocessed_dire + 'preprocessed_image_features_train.pk', 'rb'))
-preprocessed_annotation_test = pk.load(open(preprocessed_dire + 'preprocessed_annotation_test.pk', 'rb'))
-preprocessed_image_features_test = pk.load(open(preprocessed_dire + 'preprocessed_image_features_test.pk', 'rb'))
-
-info_train = pk.load(open(preprocessed_dire + 'info_train.pk', 'rb'))
-info_test = pk.load(open(preprocessed_dire + 'info_test.pk', 'rb'))
-'''
-# info_train = json.load(open(preprocessed_dire + 'info_train.pk', 'r'))
-# info_test = json.load(open(preprocessed_dire + 'info_test.pk', 'r'))
-
-# clauses = pk.load(open(f'../../dataset/VRD/clauses.pk', 'rb'))
-# objs = pk.load(open(f'../../dataset/VRD/objects.pk', 'rb'))
-# pres = pk.load(open(f'../../dataset/VRD/predicates.pk', 'rb'))
-# word_vectors = pk.load(open(f'../../dataset/VRD/word_vectors.pk', 'rb'))
-# tokenizers = pk.load(open(f'../../dataset/VRD/tokenizers.pk', 'rb'))
-# variables = pk.load(open(f'../../dataset/VRD/var_pool.pk', 'rb'))
-# var_pool = formula.IDPool(start_from=1)
-# for _, obj in variables['id2obj'].items():
-#     var_pool.id(obj)
-# converter = Converter(var_pool, pres, objs)
-# idx2filename = pk.load(open('../../dataset/VRD/vrd_raw/idx2filename.pk', 'rb'))
-# node_features = pk.load(open('../../model/gcn/features.pk', 'rb'))['features']
 seed_name = '.seed'+str(args.seed)
-# random.seed(args.seed)
 np.random.seed(args.seed)
 torch.manual_seed(args.seed)
 
@@ -230,153 +194,6 @@ def run_test(model_test, k=5):
         return avg_loss, acc
 
 
-# def relevant_clauses(clauses, object_pair_list, converter):
-#     """
-#     From a list of CNF clauses, pick out the clauses that have propositions related to objects in
-#     the give object list
-#
-#     :param clauses: list, containing CNF clauses
-#     :param object_pair_list: list[list], containing pairs of object ids
-#     :param converter: model.Misc.Conversion.Converter object
-#     :return: list of clauses involved
-#     """
-#
-#     def _relevant(c):
-#         for l in c:
-#             triple = converter.num2triple(abs(l))
-#             for obj_pair in object_pair_list:
-#                 if obj_pair == [triple[1], triple[2]] or obj_pair == [triple[2], triple[1]]:
-#                     return True
-#         return False
-#
-#     return [c for c in clauses if _relevant(c)]
-
-#
-# def prepare_clauses(clauses, anno, converter, objs):
-#     this_obj = []
-#     # append object observation
-#     for a in anno:
-#         if a['object']['category'] not in this_obj:
-#             this_obj.append(a['object']['category'])
-#         if a['subject']['category'] not in this_obj:
-#             this_obj.append(a['subject']['category'])
-#
-#     r_clauses = relevant_clauses(clauses,
-#                                  [
-#                                      list(j) for j in
-#                                      combinations_with_replacement(this_obj, 2)
-#                                  ],
-#                                  converter)
-#     assumptions = []
-#     for a in anno:
-#         assumptions.append([converter.name2num((
-#             box_prop_name(a['subject']['bbox'], a['object']['bbox']),
-#             objs[a['subject']['category']],
-#             objs[a['object']['category']]
-#         ))])
-#
-#     r_clauses = r_clauses + assumptions
-#     r_container = RelevantFormulaContainer(r_clauses)
-#
-#     return r_clauses, r_container
-
-#
-# def assignment_to_gcn_compatible(var_list, node_features):
-#     """
-#     :param var_list:
-#     :param rel_list:
-#     :return: adj, feature, label
-#     """
-#     features = torch.stack(
-#         [torch.cuda.FloatTensor(node_features['Global'])] +
-#         var_list +
-#         [torch.cuda.FloatTensor(node_features['And'])])
-#     labels = torch.cuda.FloatTensor([0] + [1] * len(var_list) + [3])
-#     adj = torch.eye(len(labels), len(labels))
-#     adj[0, :] = 1
-#     adj[:, 0] = 1
-#     adj[-1, :] = 1
-#     adj[:, -1] = 1
-#
-#     r_inv = adj.sum(dim=1) ** (-1)
-#     r_mav_inv = torch.diag(r_inv)
-#     adj_normalized = torch.mm(r_mav_inv, adj)
-#
-#     return adj_normalized, features, labels
-
-
-# def get_formula_from_image(img_name, annotations, embedder, clauses, converter, objs, tokenizers):
-#     file_id = idx2filename.index(img_name)
-#     adj0, features0, labels0, idx_train0, idx_val0, idx_test0, _, _ = \
-#         load_data(filename=file_id, dataset=args.ds_name, override_path='../../dataset/VRD', and_or=False)
-#     adj0 = adj0.to_dense().cuda()
-#     features0 = features0.cuda()
-#     labels0 = labels0.cuda()
-#     output = embedder(features0.squeeze(0), adj0.squeeze(0), labels0)
-#     return output[0]
-
-
-# def prediction_to_assignment_embedding(softmax_list, info_list, embedder, tokenizers, pres, objs):
-#     """
-#     :param softmax_list: a torch.Tensor
-#     :param info_list: [(img_name, (label1, bbox1), (label2, bbox2))]
-#     :param embedders: (pe, ce, ae)
-#     :return: the embedding of assignment
-#     """
-#
-#     def _feature(name):
-#         embedding = np.array(
-#             [word_vectors[tokenizers['vocab2token'][i]] for i in name.split(' ')])
-#         summed_embedding = np.sum(embedding, axis=0)
-#         return summed_embedding
-#
-#     embedded_clauses = []
-#     for idx, info in enumerate(info_list):
-#         prop = softmax_list[idx]
-#         sub = objs[info_list[idx][1][0]]
-#         obj = objs[info_list[idx][2][0]]
-#
-#         e_p = 0
-#         for pres_idx in range(0, 70):
-#             e_p += prop[pres_idx] * torch.cuda.FloatTensor(_feature(tokenizers['token2vocab'][pres_idx]))
-#         e_p = e_p / 70
-#         e_p = (e_p + torch.cuda.FloatTensor(_feature(sub)) + torch.cuda.FloatTensor(_feature(obj))) / 3
-#
-#         embedded_clauses.append(e_p)
-#
-#     for idx, info in enumerate(info_list):
-#         pos = box_prop_name(info_list[idx][1][1], info_list[idx][2][1])
-#         if pos in POS_REL_NAMES_FULL.keys():
-#             pos = POS_REL_NAMES_FULL[pos]
-#         sub = objs[info_list[idx][1][0]]
-#         obj = objs[info_list[idx][2][0]]
-#         embedded_clauses.append((torch.cuda.FloatTensor(_feature(pos)) +
-#                                  torch.cuda.FloatTensor(_feature(sub)) +
-#                                  torch.cuda.FloatTensor(_feature(obj))) / 3)
-#     adj0, features0, labels0 = assignment_to_gcn_compatible(embedded_clauses, node_features)
-#
-#     embedded_clauses = embedder(features0.cuda().squeeze(0), adj0.cuda().squeeze(0), labels0.cuda())
-#
-#     return embedded_clauses
-
-
-# load embedders
-# embedder_filename = args.filename
-# indep_weights = 'ind' in embedder_filename
-# if not os.path.exists('../gcn/model_save/'):
-#     os.makedirs('../gcn/model_save/')
-# embedder = torch.load('../gcn/model_save/' + embedder_filename)
-# embedder = GCN(nfeat=50,
-#                nhid=50,
-#                # nclass=labels.max().item() + 1,
-#                nclass=100,
-#                dropout=0.5,
-#                indep_weights=indep_weights).cuda()
-# embedder.load_state_dict(torch.load('../gcn/model_save/' + embedder_filename))
-# for p in embedder.parameters():
-#     p.requires_grad = False
-
-
 loss_save = {}
 loss_save['train_avgloss_all'] = []
 loss_save['train_avgloss_ce'] = []
@@ -409,15 +226,6 @@ for iter in range(num_epoches):
         #print(prediction.dim())
         #exit(0)
         loss_entropy = F.nll_loss(F.log_softmax(prediction,dim=1), y)
-
-        # # calculate loss
-        # formula_embedding = get_formula_from_image(info[0][0], preprocessed_annotation_train, embedder, clauses, converter, objs,
-        #                                            tokenizers)
-        # assignment_embedding = prediction_to_assignment_embedding(F.softmax(prediction,dim=1), info, embedder, tokenizers,
-        #                                                           pres, objs)
-        # loss_embedding = (formula_embedding - assignment_embedding).norm()
-        #
-        # loss = loss_entropy + logic_loss_weight * loss_embedding
         loss = loss_entropy
 
 
