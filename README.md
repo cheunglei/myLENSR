@@ -1,4 +1,4 @@
-# an Implement of LENSR
+# An Implement of LENSR
 This repository is an implement of the paper "Embedding Symbolic Knowledge into Deep Networks" (NeurIPS 2019).  
 It referenced and quote a part of [author's repository](https://github.com/ZiweiXU/LENSR).  
 
